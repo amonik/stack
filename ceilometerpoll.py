@@ -6,6 +6,7 @@ import keystoneclient.v2_0.client as k_client
 #from constants import *
 import ceilometerclient.v2 as c_client
 import os
+import novainstance
 
 CEILOMETER_URL='http://localhost:8777'
 try:
@@ -29,12 +30,11 @@ ceilometer = c_client.Client(endpoint=CEILOMETER_URL, token= lambda : auth_token
 
 meterlist = ceilometer.meters.list()
 
-query = [dict(field='resource_id', op='eq', value='5cdb6a51-f26c-4834-b490-a3eae60233b5')]
-
-cpu_util_sample = ceilometer.samples.list(meter_name = 'cpu_util', q = query,limit = 1)
-
-for each in cpu_util_sample:
-    print each.timestamp, each.resource_id, each.counter_volume
+for server in novainstance.getInstanceID():
+    query = [dict(field ='resource_id', op ='eq', value = server)]
+    cpu_util_sample = ceilometer.samples.list(meter_name = 'cpu_util', q = query,limit = 1)
+    for each in cpu_util_sample:
+        print each.timestamp, each.resource_id, each.counter_volume
 
 
 #_______________________________________________________________________________
