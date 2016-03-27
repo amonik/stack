@@ -1,6 +1,6 @@
-import os
-from novaclient.v2 import client
-try:
+    import os
+    from novaclient.v2 import client
+
     def get_nova_creds():
         d = {}
         d['username'] = os.environ['OS_USERNAME']
@@ -8,16 +8,18 @@ try:
         d['auth_url'] = os.environ['OS_AUTH_URL']
         d['project_id'] = os.environ['OS_TENANT_NAME']
         return d
-except (KeyError,RuntimeError, TypeError, NameError):
-    print "Please import your RC file"
+    try:
+        get_nova_creds()
+        pass
+    except (KeyError,RuntimeError, TypeError, NameError):
+        print "\nPlease import your RC file."
 
+    def getInstanceID():
+        ID = []
+        VERSION = '2'
+        creds = get_nova_creds()
+        nova = client.client.Client(VERSION,**creds)
 
-def getInstanceID():
-    ID = []
-    VERSION = '2'
-    creds = get_nova_creds()
-    nova = client.client.Client(VERSION,**creds)
-
-    for server in nova.servers.list(search_opts={'all_tenants': 1}):
-        ID.append(server.id) #, server.name
-    return ID
+        for server in nova.servers.list(search_opts={'all_tenants': 1}):
+            ID.append(server.id) 
+        return ID
