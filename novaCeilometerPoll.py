@@ -48,7 +48,7 @@ def getCeilometer():
     auth_token = keystone.auth_token
     ceilometer = c_client.Client(endpoint=CEILOMETER_URL, token= lambda : auth_token )
     return ceilometer
-    
+   
 if __name__ == '__main__':
     
     NovaID = []
