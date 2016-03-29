@@ -48,6 +48,19 @@ def getCeilometer():
     auth_token = keystone.auth_token
     ceilometer = c_client.Client(endpoint=CEILOMETER_URL, token= lambda : auth_token )
     return ceilometer
+
+
+def max_cpu_util():
+    cpu_util = 80
+    return cpu_util
+
+def max_network_outgoing_bytes_rate():
+    network_outgoing_bytes_rate = 100
+    return network_outgoing_bytes_rate
+
+def max_memory_usage():
+    memory_usage = 80
+    return memory_usage
    
 if __name__ == '__main__':
     
@@ -57,6 +70,16 @@ if __name__ == '__main__':
 
     for server in NovaID:
         query = [dict(field ='resource_id', op ='eq', value = server)]
-        cpu_util_sample = getCeilometer().samples.list(meter_name = 'cpu_util', q = query,limit = 1)
+        query2 = [{'field': 'metadata.instance_id', 'op': 'eq', 'value': server}]
+        cpu_util_sample = getCeilometer().samples.list(meter_name = 'cpu_util',q=query, limit = 1)
+
+        network_outgoing_bytes_rate_sample = getCeilometer().samples.list(meter_name = 'network.outgoing.bytes.rate', q = query2, limit = 1 ) 
+        
         for each in cpu_util_sample:
             print each.timestamp, each.resource_id, each.counter_volume
+    
+        for each in network_outgoing_bytes_rate_sample:
+            print each.timestamp, each.counter_volume
+            
+
+
