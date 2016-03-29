@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+__author__ = "Adeyin Amon Ikpah-Aziaruh"
+__version__ = "1.0"
+
 import keystoneclient.v2_0.client as k_client
 import ceilometerclient.v2 as c_client
 from novaclient.v2 import client
