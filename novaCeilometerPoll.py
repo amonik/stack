@@ -51,7 +51,7 @@ def getCeilometer():
 
 
 def max_cpu_util():
-    cpu_util = 80
+    cpu_util = 30
     return cpu_util
 
 def max_network_outgoing_bytes_rate():
@@ -70,16 +70,28 @@ if __name__ == '__main__':
 
     for server in NovaID:
         query = [dict(field ='resource_id', op ='eq', value = server)]
+
         query2 = [{'field': 'metadata.instance_id', 'op': 'eq', 'value': server}]
+
         cpu_util_sample = getCeilometer().samples.list(meter_name = 'cpu_util',q=query, limit = 1)
 
         network_outgoing_bytes_rate_sample = getCeilometer().samples.list(meter_name = 'network.outgoing.bytes.rate', q = query2, limit = 1 ) 
+
+        getServerNameFromServerID = getNova().servers.get(server)
+        getServerNameFromServerID.name
         
+
         for each in cpu_util_sample:
-            print each.timestamp, each.resource_id, each.counter_volume
-    
+            getServerNameFromServerID = getNova().servers.get(server)
+            print("The cpu_util of %s: " % getServerNameFromServerID.name)
+            print each.counter_volume
+            if each.counter_volume >= max_cpu_util():
+                print("deleting server %s becasue cpu_util is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
+                getNova().delete(each.resource_id) #will delete resource.
+                print("server %s deleted" % getServerNameFromServerID.name)
+
         for each in network_outgoing_bytes_rate_sample:
-            print each.timestamp, each.counter_volume
-            
+            print("The network_outgoing_bytes_rate of server %s:" % getServerNameFromServerID.name)
+            print each.counter_volume  
 
-
+    
