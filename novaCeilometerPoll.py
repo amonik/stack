@@ -83,15 +83,19 @@ if __name__ == '__main__':
 
         for each in cpu_util_sample:
             getServerNameFromServerID = getNova().servers.get(server)
-            print("The cpu_util of %s: " % getServerNameFromServerID.name)
+            print("The cpu util of %s: " % getServerNameFromServerID.name)
             print each.counter_volume
             if each.counter_volume >= max_cpu_util():
-                print("deleting server %s becasue cpu_util is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
+                print("deleting server %s becasue cpu util is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
                 getNova().delete(each.resource_id) #will delete resource.
                 print("server %s deleted" % getServerNameFromServerID.name)
 
         for each in network_outgoing_bytes_rate_sample:
-            print("The network_outgoing_bytes_rate of server %s:" % getServerNameFromServerID.name)
-            print each.counter_volume  
+            print("The outgoing bytes rate of server %s:" % getServerNameFromServerID.name)
+            print each.counter_volume 
+            if each.counter_volume >= max_network_outgoing_bytes_rate():
+                print("deleting server %s becasue outgoing bytes rate is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
+                getNova().delete(getServerNameFromServerID.name) #will delete resource.
+                print("server %s deleted" % getServerNameFromServerID.name)
 
     
