@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 __author__ = "Adeyin Amon Ikpah-Aziaruh"
-__version__ = "1.0"
+__version__ = "1.1"
 
 import keystoneclient.v2_0.client as k_client
 import ceilometerclient.v2 as c_client
 from novaclient.v2 import client
+from novaclient.v2 import servers
 import os
 #import threshold
 
@@ -90,15 +91,17 @@ if __name__ == '__main__':
             print each.counter_volume
             if each.counter_volume >= max_cpu_util():
                 print("deleting server %s becasue cpu util is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
-                getNova().delete(each.resource_id) #will delete resource.
+                findServer = getNova().servers.find(name = each.resource_id)
+                getNova().servers.delete(findServer) #will delete resource.
                 print("server %s deleted" % getServerNameFromServerID.name)
 
         for each in network_outgoing_bytes_rate_sample:
             print("The outgoing bytes rate of server %s:" % getServerNameFromServerID.name)
             print each.counter_volume 
             if each.counter_volume >= max_network_outgoing_bytes_rate():
-                print("deleting server %s becasue outgoing bytes rate is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
-                getNova().delete(getServerNameFromServerID.name) #will delete resource.
+                print("deleting server %s becasue outgoing bytes rate is greater than %s" % (getServerNameFromServerID.name,max_network_outgoing_bytes_rate()))
+                findServer1 = getNova().servers.find(name = getServerNameFromServerID.name)
+                getNova().servers.delete(findServer1) #will delete resource.
                 print("server %s deleted" % getServerNameFromServerID.name)
 
     
