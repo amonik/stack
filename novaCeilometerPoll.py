@@ -9,6 +9,9 @@ from novaclient.v2 import client
 from novaclient.v2 import servers
 import os
 #import threshold
+import time
+
+now = time.strftime("%c")
 
 def get_nova_creds():
     d = {}
@@ -70,12 +73,12 @@ if __name__ == '__main__':
     
     NovaID = []
     for server in getNova().servers.list(search_opts={'all_tenants': 1}):
-        NovaID.append(server.id) 
+        NovaID.append(server.id) #Gets the server ID number
 
     for server in NovaID:
-        query = [dict(field ='resource_id', op ='eq', value = server)]
+        query = [dict(field ='resource_id', op ='eq', value = server)] #gets resource ID from server
 
-        query2 = [{'field': 'metadata.instance_id', 'op': 'eq', 'value': server}]
+        query2 = [{'field': 'metadata.instance_id', 'op': 'eq', 'value': server}] #gets instance ID from metadata
 
         cpu_util_sample = getCeilometer().samples.list(meter_name = 'cpu_util',q=query, limit = 1)
 
@@ -103,5 +106,5 @@ if __name__ == '__main__':
                 findServer1 = getNova().servers.find(name = getServerNameFromServerID.name)
                 getNova().servers.delete(findServer1) #will delete resource.
                 print("server %s deleted" % getServerNameFromServerID.name)
-
+        print(now)
     
