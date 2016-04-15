@@ -1,0 +1,143 @@
+#Configure local.conf localrc section
+
+[[local|localrc]]
+
+# Minimal Contents
+# ----------------
+ADMIN_PASSWORD=stack
+DATABASE_PASSWORD=stack
+RABBIT_PASSWORD=stack
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+#Enable heat services
+enable_service h-eng h-api h-api-cfn h-api-cw
+IMAGE_URL_SITE="http://download.fedoraproject.org"
+IMAGE_URL_PATH="/pub/fedora/linux/releases/21/Cloud/Images/x86_64/"
+IMAGE_URL_FILE="Fedora-Cloud-Base-20141203-21.x86_64.qcow2"
+IMAGE_URLS+=","$IMAGE_URL_SITE$IMAGE_URL_PATH$IMAGE_URL_FILE
+#Enable ceilometer
+CEILOMETER_BACKEND=mongodb
+enable_plugin ceilometer https://git.openstack.org/openstack/ceilometer
+enable_plugin aodh https://git.openstack.org/openstack/aodh
+CEILOMETER_NOTIFICATION_TOPICS=notifications,profiler
+# Load the external LBaaS plugin.
+enable_plugin neutron-lbaas https://git.openstack.org/openstack/neutron-lbaas
+enable_plugin octavia https://git.openstack.org/openstack/octavia
+
+# Enable Logging
+LOGFILE=$DEST/logs/stack.sh.log
+VERBOSE=True
+LOG_COLOR=True
+SCREEN_LOGDIR=$DEST/logs
+# Pre-requisite
+ENABLED_SERVICES=rabbit,mysql,key
+# Horizon
+ENABLED_SERVICES+=,horizon
+# Nova
+ENABLED_SERVICES+=,n-api,n-crt,n-cpu,n-cond,n-sch
+# Glance
+ENABLED_SERVICES+=,g-api,g-reg
+# Neutron
+ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta
+# Enable LBaaS v2
+ENABLED_SERVICES+=,q-lbaasv2
+ENABLED_SERVICES+=,octavia,o-cw,o-hk,o-hm,o-api
+# Cinder
+ENABLED_SERVICES+=,c-api,c-vol,c-sch
+# Tempest
+ENABLED_SERVICES+=,tempest
+#-----End localrc-------------
+
+
+--------------------------------------------------------------------------------------------------------------
+
+$ cd devstack; ./stack.sh
+
+$ neutron net-list
+
++--------------------------------------+---------+----------------------------------------------------------+
+| id                                   | name    | subnets                                                  |
++--------------------------------------+---------+----------------------------------------------------------+
+| c64fc404-2373-44b6-b181-5b494753a396 | private | 27ad2a82-1293-42c9-9388-9289b851def2 10.0.0.0/24         |
+|                                      |         | b4139afc-23c5-4249-b0d7-3f0973fa73e0 fd21:b225:d998::/64 |
+| 0e3ed46f-1faa-4e80-b1a0-58d458f54593 | public  | 9ae6106e-62ee-4284-8468-141b1f4f786d 172.24.4.0/24       |
+|                                      |         | f8141902-92c4-487b-b700-7b296783f017 2001:db8::/64       |
++--------------------------------------+---------+----------------------------------------------------------+
+
+#Create two web servers
+
+nova boot --image $(nova image-list | awk '/ cirros-.*-x86_64-uec / {print $2}') --flavor 1 --nic net-id=$(neutron net-list | awk '/ private / {print $2}') node1
+nova boot --image $(nova image-list | awk '/ cirros-.*-x86_64-uec / {print $2}') --flavor 1 --nic net-id=$(neutron net-list | awk '/ private / {print $2}') node2
+
+#add Access lists Security rules use security group id not 560c851a-377b-4579-b1ba-b65614f79993.
+
+#add secgroup rules to allow ssh and http
+neutron security-group-rule-create 560c851a-377b-4579-b1ba-b65614f79993 --protocol icmp
+neutron security-group-rule-create 560c851a-377b-4579-b1ba-b65614f79993 --protocol tcp --port-range-min 22 --port-range-max 22
+neutron security-group-rule-create 560c851a-377b-4579-b1ba-b65614f79993 --protocol tcp --port-range-min 80 --port-range-max 80
+
+#Get IP of instances
+
+nova list
+
+#Add ip to you host file
+sudo vi /etc/hosts
+
+10.0.0.3 	node1
+10.0.0.4	node2
+
+#Create web server on instances
+	#ssh to them and add bash script
+
+	ssh cirros@node<x>
+
+	#password cubswin:)
+
+
+MYIP=$(ifconfig eth0|grep 'inet addr'|awk -F: '{print $2}'| awk '{print $1}')
+while true; do echo -e "HTTP/1.0 200 OK\r\n\r\nWelcome to $MYIP" | sudo nc -l -p 80 ; done&
+
+#Verify that host is listening on that port
+netstat -atun
+	#Should see this 
+	tcp        0      0 :::80                   :::*                    LISTEN
+
+#Create loadbalancer
+
+neutron lbaas-loadbalancer-create --name lb1 private-subnet
+neutron lbaas-loadbalancer-show lb1  # Wait for the provisioning_status to be ACTIVE.
+neutron lbaas-listener-create --loadbalancer lb1 --protocol HTTP --protocol-port 80 --name listener1
+sleep 10  # Sleep since LBaaS actions can take a few seconds depending on the environment.
+neutron lbaas-pool-create --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --name pool1
+sleep 10
+neutron lbaas-member-create  --subnet private-subnet --address node1 --protocol-port 80 pool1
+sleep 10
+neutron lbaas-member-create  --subnet private-subnet --address node2 --protocol-port 80 pool1
+
+#Test connection
+
+wget -O - http://10.0.0.5
+
+#Will go to alternating load balancers
+
+adeyin@r5-x3550-3:~$ wget -O - http://10.0.0.5
+--2016-04-15 14:21:05--  http://10.0.0.5/
+Connecting to 10.0.0.5:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified
+Saving to: ‘STDOUT’
+ 0           --.-K/s Welcome to 10.0.0.3
+    [ <=>                                                                                                                                                                  
+
+2016-04-15 14:21:05 (2.49 MB/s) - written to stdout [20]
+
+adeyin@r5-x3550-3:~$ wget -O - http://10.0.0.5
+--2016-04-15 14:21:06--  http://10.0.0.5/
+Connecting to 10.0.0.5:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified
+Saving to: ‘STDOUT
+ 0           --.-K/s              Welcome to 10.0.0.4
+    [ <=>                                                                                                                                                       
+
+2016-04-15 14:21:06 (1.01 MB/s) - written to stdout [20]
+
