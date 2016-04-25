@@ -1,4 +1,4 @@
-export OS_AUTH_URL=http://10.245.125.5:5000
+export OS_AUTH_URL=http://10.245.125.5:5000/v2.0/
 export OS_TENANT_ID=a5233fd55b574ca3a88dc7da784b16dd
 export OS_TENANT_NAME="admin"
 
