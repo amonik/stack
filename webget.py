@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import os
-def webGet(n):
+import time
+def webGet(n,ip):
 	for x in xrange(n):
-		os.system('wget -O - http://10.0.0.5')
+		os.system('wget -O - http://%s'%ip)
+		time.sleep(3)
+
