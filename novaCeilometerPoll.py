@@ -1,74 +1,13 @@
 #!/usr/bin/env python
 
 __author__ = "Adeyin Amon Ikpah-Aziaruh"
-__version__ = "1.1"
+__version__ = "2.0"
 
-import keystoneclient.v2_0.client as k_client
-import ceilometerclient.v2 as c_client
-from novaclient.v2 import client
-from novaclient.v2 import servers
-import os
-#import threshold
+from ceilometer import getCeilometer
+from nova import getNova
 import time
-
 now = time.strftime("%c")
 
-def get_nova_creds():
-    d = {}
-    d['username'] = os.environ['OS_USERNAME']
-    d['api_key'] = os.environ['OS_PASSWORD']
-    d['auth_url'] = os.environ['OS_AUTH_URL']
-    d['project_id'] = os.environ['OS_TENANT_NAME']
-    return d
-    try:
-        get_nova_creds()
-        pass
-    except (KeyError,RuntimeError, TypeError, NameError):
-        print "\nPlease import your RC file."
-
-def get_keystone_creds():
-    #define dictionary
-    d = {}
-    d['username'] = os.environ['OS_USERNAME']
-    d['password'] = os.environ['OS_PASSWORD']
-    d['auth_url'] = os.environ['OS_AUTH_URL']
-    d['tenant_name'] = os.environ['OS_TENANT_NAME']
-    return d
-    try:
-        get_keystone_creds()
-        pass
-    except (KeyError,RuntimeError, TypeError, NameError):
-        print "\nPlease import your RC file."
-
-def getNova():
-    
-    VERSION = '2'
-    creds = get_nova_creds()
-    nova = client.client.Client(VERSION,**creds)
-    return nova
-
-def getCeilometer():
-
-    CEILOMETER_URL='http://localhost:8777'
-    creds = get_keystone_creds()
-    keystone = k_client.Client(**creds)
-    auth_token = keystone.auth_token
-    ceilometer = c_client.Client(endpoint=CEILOMETER_URL, token= lambda : auth_token )
-    return ceilometer
-
-
-def max_cpu_util():
-    cpu_util = 30
-    return cpu_util
-
-def max_network_outgoing_bytes_rate():
-    network_outgoing_bytes_rate = 100
-    return network_outgoing_bytes_rate
-
-def max_memory_usage():
-    memory_usage = 80
-    return memory_usage
-   
 if __name__ == '__main__':
     
     NovaID = []
@@ -83,6 +22,8 @@ if __name__ == '__main__':
         cpu_util_sample = getCeilometer().samples.list(meter_name = 'cpu_util',q=query, limit = 1)
 
         network_outgoing_bytes_rate_sample = getCeilometer().samples.list(meter_name = 'network.outgoing.bytes.rate', q = query2, limit = 1 ) 
+	
+	network_incoming_bytes_rate = getCeilometer().samples.list(meter_name = 'network.incoming.bytes.rate', q = query2, limit = 1)
 
         getServerNameFromServerID = getNova().servers.get(server)
         getServerNameFromServerID.name
@@ -92,19 +33,13 @@ if __name__ == '__main__':
             getServerNameFromServerID = getNova().servers.get(server)
             print("The cpu util of %s: " % getServerNameFromServerID.name)
             print each.counter_volume
-            if each.counter_volume >= max_cpu_util():
-                print("deleting server %s becasue cpu util is greater than %s" % (getServerNameFromServerID.name,max_cpu_util()))
-                findServer = getNova().servers.find(name = each.resource_id)
-                getNova().servers.delete(findServer) #will delete resource.
-                print("server %s deleted" % getServerNameFromServerID.name)
 
         for each in network_outgoing_bytes_rate_sample:
             print("The outgoing bytes rate of server %s:" % getServerNameFromServerID.name)
             print each.counter_volume 
-            if each.counter_volume >= max_network_outgoing_bytes_rate():
-                print("deleting server %s becasue outgoing bytes rate is greater than %s" % (getServerNameFromServerID.name,max_network_outgoing_bytes_rate()))
-                findServer1 = getNova().servers.find(name = getServerNameFromServerID.name)
-                getNova().servers.delete(findServer1) #will delete resource.
-                print("server %s deleted" % getServerNameFromServerID.name)
+	
+	for each in network_incoming_bytes_rate:
+	    print("The incoming bytes rate of server %s:" % getServerNameFromServerID.name)
+	    print each.counter_volume
         print(now)
     
