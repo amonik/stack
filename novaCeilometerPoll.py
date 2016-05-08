@@ -6,10 +6,21 @@ __version__ = "2.0"
 from ceilometer import getCeilometer
 from nova import getNova
 import time
+from ceilometerAlarms import createAlarmID
 now = time.strftime("%c")
 
 if __name__ == '__main__':
-    
+    meterName = []
+    Node = []
+    createAlarmID()
+    for alarmID in createAlarmID():
+	if getCeilometer().alarms.get_state(alarmID) == 'alarm':
+		Node.append(getCeilometer().alarms.get(alarmID).name[1:])
+		meterName.append(getCeilometer().alarms.get(alarmID).threshold_rule.get('meter_name'))
+    for item in meterName:
+	print item
+    for item in Node:
+	print item
     NovaID = []
     for server in getNova().servers.list(search_opts={'all_tenants': 1}):
         NovaID.append(server.id) #Gets the server ID number

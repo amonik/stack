@@ -14,7 +14,7 @@ def createAlarmID():
 	       				'q':'resource_id =%s'%server}
 
 	       		alarmdictIncomingBytes = {'name':'2%s'%server, 'description':'node incoming bytes', 
-	       			'meter_name':'network.incoming.bytes', 'threshold':'180', 'comparison_operator':'gt', 'period':'15', 
+	       			'meter_name':'network.incoming.bytes', 'threshold':'90', 'comparison_operator':'gt', 'period':'15', 
 	       				'evaluation_periods':'1', 'alarm_action': 'log://',  'q':'resource_id =%s'%server}
 
 	       		getCeilometer().alarms.create(aodh_enabled=True,**alarmdictCPU)
