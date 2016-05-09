@@ -7,6 +7,9 @@ from ceilometer import getCeilometer
 from nova import getNova
 import time
 from ceilometerAlarms import createAlarmID
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 now = time.strftime("%c")
 
 if __name__ == '__main__':
@@ -17,10 +20,10 @@ if __name__ == '__main__':
 	if getCeilometer().alarms.get_state(alarmID) == 'alarm':
 		Node.append(getCeilometer().alarms.get(alarmID).name[1:])
 		meterName.append(getCeilometer().alarms.get(alarmID).threshold_rule.get('meter_name'))
-    for item in meterName:
-	print item
-    for item in Node:
-	print item
+    f = open('logAlarm','a')
+    for node,alarm in zip(Node,meterName):
+	print(node,alarm)
+	f.write("%s has passed the threshold of %s\n%s\n" %(getNova().servers.get(node),alarm,now))
     NovaID = []
     for server in getNova().servers.list(search_opts={'all_tenants': 1}):
         NovaID.append(server.id) #Gets the server ID number
@@ -34,7 +37,7 @@ if __name__ == '__main__':
 
         network_outgoing_bytes_rate_sample = getCeilometer().samples.list(meter_name = 'network.outgoing.bytes.rate', q = query2, limit = 1 ) 
 	
-	network_incoming_bytes_rate = getCeilometer().samples.list(meter_name = 'network.incoming.bytes.rate', q = query2, limit = 1)
+	network_incoming_bytes_rate = getCeilometer().samples.list(meter_name = 'network.incoming.bytes.rate', q = query2, limit = 21)
 
         getServerNameFromServerID = getNova().servers.get(server)
         getServerNameFromServerID.name
@@ -48,9 +51,14 @@ if __name__ == '__main__':
         for each in network_outgoing_bytes_rate_sample:
             print("The outgoing bytes rate of server %s:" % getServerNameFromServerID.name)
             print each.counter_volume 
-	
+	bytes = []
 	for each in network_incoming_bytes_rate:
-	    print("The incoming bytes rate of server %s:" % getServerNameFromServerID.name)
-	    print each.counter_volume
+	    #print("The incoming bytes rate of server %s:" % getServerNameFromServerID.name)
+	   # print each.counter_volume
+	    bytes.append(int(each.counter_volume))
+	    print bytes
+	    plt.figure()
+            plt.plot(bytes)
+	    plt.savefig('plot.png')
         print(now)
     
