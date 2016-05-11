@@ -16,3 +16,9 @@ def get_nova_creds():
     d['auth_url'] = OS_AUTH_URL= 'http://localhost:5000/v2.0/'
     d['project_id'] = os.environ['OS_TENANT_NAME']
     return d
+
+def heat_port():
+   
+    d  = 'http://localhost:8004/v1.0/%s' % os.environ['OS_TENANT_ID']
+
+    return d
