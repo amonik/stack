@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
         network_outgoing_bytes_rate_sample = getCeilometer().samples.list(meter_name = 'network.outgoing.bytes.rate', q = query2, limit = 1 ) 
 	
-	network_incoming_bytes_rate = getCeilometer().samples.list(meter_name = 'network.incoming.bytes.rate', q = query2, limit = 21)
+	network_incoming_bytes_rate = getCeilometer().samples.list(meter_name = 'network.incoming.bytes.rate', q = query2, limit = 100)
 
         getServerNameFromServerID = getNova().servers.get(server)
         getServerNameFromServerID.name
@@ -48,16 +48,17 @@ if __name__ == '__main__':
             print("The cpu util of %s: " % getServerNameFromServerID.name)
             print each.counter_volume
 
-        for each in network_outgoing_bytes_rate_sample:
+        for each in reversed(network_outgoing_bytes_rate_sample):
             print("The outgoing bytes rate of server %s:" % getServerNameFromServerID.name)
             print each.counter_volume 
 	bytes = []
-	for each in network_incoming_bytes_rate:
+	for each in reversed(network_incoming_bytes_rate):
 	    #print("The incoming bytes rate of server %s:" % getServerNameFromServerID.name)
 	   # print each.counter_volume
 	    bytes.append(int(each.counter_volume))
 	    print bytes
 	    plt.figure()
+	    plt.title("Network Incoming Bytes Rate")
             plt.plot(bytes)
 	    plt.savefig('plot.png')
         print(now)
